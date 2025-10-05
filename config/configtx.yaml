@@ -1,0 +1,201 @@
+################################################################################
+#   Hyperledger Fabric channel configuration (configtx) for rentalchannel
+################################################################################
+
+# Define Capabilities for different components
+Capabilities:
+    Channel: &ChannelCapabilities
+        V2_0: true
+    Orderer: &OrdererCapabilities
+        V2_0: true
+    Application: &ApplicationCapabilities
+        V2_0: true
+
+Channel: &ChannelDefaults
+  Policies:
+    Readers:
+      Type: ImplicitMeta
+      Rule: "ANY Readers"
+    Writers:
+      Type: ImplicitMeta
+      Rule: "ANY Writers"
+    Admins:
+      Type: ImplicitMeta
+      Rule: "MAJORITY Admins"
+  Capabilities:
+    <<: *ChannelCapabilities
+
+Organizations:
+
+    - &OrdererOrg
+        Name: OrdererOrgMSP
+        ID: OrdererOrgMSP
+        MSPDir: ../organizations/ordererOrganizations/ordererorg.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrdererOrgMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrdererOrgMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrdererOrgMSP.admin')"
+        # The OrdererEndpoints field is only used in the Application section context
+        OrdererEndpoints:
+            - orderer1.ordererorg.example.com:7050
+            - orderer2.ordererorg.example.com:7050
+            - orderer3.ordererorg.example.com:7050
+
+    - &OrgProp
+        Name: OrgPropMSP
+        ID: OrgPropMSP
+        MSPDir: ../organizations/peerOrganizations/orgprop.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrgPropMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrgPropMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrgPropMSP.admin')"
+        AnchorPeers:
+            - Host: peer0.orgprop.example.com
+              Port: 7051
+
+    - &OrgTenant
+        Name: OrgTenantMSP
+        ID: OrgTenantMSP
+        MSPDir: ../organizations/peerOrganizations/orgtenant.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrgTenantMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrgTenantMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrgTenantMSP.admin')"
+        AnchorPeers:
+            - Host: peer0.orgtenant.example.com
+              Port: 8051
+
+    - &OrgLandlord
+        Name: OrgLandlordMSP
+        ID: OrgLandlordMSP
+        MSPDir: ../organizations/peerOrganizations/orglandlord.example.com/msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('OrgLandlordMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('OrgLandlordMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('OrgLandlordMSP.admin')"
+        AnchorPeers:
+            - Host: peer0.orglandlord.example.com
+              Port: 9051
+
+# Define the orderer (consensus) configuration
+Orderer: &OrdererDefaults
+    OrdererType: etcdraft
+    Addresses:
+        - orderer1.ordererorg.example.com:7050
+        - orderer2.ordererorg.example.com:7050
+        - orderer3.ordererorg.example.com:7050
+    EtcdRaft:
+        Consenters:
+            - Host: orderer1.ordererorg.example.com
+              Port: 7050
+              ClientTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt
+              ServerTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt
+            - Host: orderer2.ordererorg.example.com
+              Port: 7050
+              ClientTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/tls/server.crt
+              ServerTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/tls/server.crt
+            - Host: orderer3.ordererorg.example.com
+              Port: 7050
+              ClientTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/tls/server.crt
+              ServerTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/tls/server.crt
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 98 MB
+        PreferredMaxBytes: 512 KB
+    # The following are standard policies for orderer (for config update validation)
+    Policies:
+        Readers:
+            Type: Signature
+            Rule: "OR('OrdererOrgMSP.member')"
+        Writers:
+            Type: Signature
+            Rule: "OR('OrdererOrgMSP.member')"
+        Admins:
+            Type: Signature
+            Rule: "OR('OrdererOrgMSP.admin')"
+        BlockValidation:
+            Type: Signature
+            Rule: "OR('OrdererOrgMSP.member')"
+    Capabilities:
+        <<: *OrdererCapabilities
+
+# Application section default (for channel application config)
+Application: &ApplicationDefaults
+    Organizations: []
+    ACLs: {}   # can define ACLs for chaincode and events (left empty for default behavior)
+    Policies:
+        Readers:
+            Type: Signature
+            Rule: "OR('OrgPropMSP.member','OrgTenantMSP.member','OrgLandlordMSP.member')"
+        Writers:
+            Type: Signature
+            Rule: "OR('OrgPropMSP.member','OrgTenantMSP.member','OrgLandlordMSP.member')"
+        Admins:
+            Type: Signature
+            Rule: "OR('OrgPropMSP.admin','OrgTenantMSP.admin','OrgLandlordMSP.admin')"
+        # Lifecycle endorsement by peers (matching Endorsement policy)
+        LifecycleEndorsement:
+            Type: Signature
+            Rule: "OR('OrgPropMSP.peer','OrgTenantMSP.peer','OrgLandlordMSP.peer')"
+        # Chaincode endorsement policy (default, can be overridden by chaincode definition)
+        Endorsement:
+            Type: Signature
+            Rule: "OR('OrgPropMSP.peer','OrgTenantMSP.peer','OrgLandlordMSP.peer')"
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+# Channel definitions (profiles)
+Profiles:
+    RentalChannel:
+        Capabilities:
+            <<: *ChannelCapabilities
+        Policies:   
+            Readers:
+                Type: ImplicitMeta
+                Rule: "ANY Readers"
+            Writers:
+                Type: ImplicitMeta
+                Rule: "ANY Writers"
+            Admins:
+                Type: ImplicitMeta
+                Rule: "MAJORITY Admins"            
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *OrdererOrg
+            Capabilities:
+                <<: *OrdererCapabilities
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *OrgProp
+                - *OrgTenant
+                - *OrgLandlord
+            Capabilities:
+                <<: *ApplicationCapabilities
+            

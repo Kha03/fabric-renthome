@@ -1,0 +1,54 @@
+# core.yaml - Peer configuration (abridged for clarity)
+# Only overriding key sections. The Fabric defaults are used for others.
+
+peer:
+    # TLS enabled (we override via environment too)
+    tls:
+        enabled: true
+        # The following are not strictly needed since env vars supply the file paths
+        cert:
+            file: tls/server.crt
+        key:
+            file: tls/server.key
+        rootcert:
+            file: tls/ca.crt
+    # MSP for the peer (populated via mounted MSP folder)
+    id:
+        # Will be set from CORE_PEER_LOCALMSPID env
+        # org: OrgXMSP
+    # Enable Node OUs in MSP
+    mspConfigPath: /etc/hyperledger/fabric/msp
+    adminService:
+        # default binding for admin service (metrics etc.)
+        listenAddress: 0.0.0.0:7054
+    BCCSP:
+        Default: SW
+        SW:
+            Hash: SHA2
+            Security: 256
+            FileKeyStore:
+                KeyStore: /etc/hyperledger/fabric/msp/keystore
+
+chaincode:
+  externalBuilders:
+    - name: docker
+      path: /opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker
+      environmentWhitelist:
+        - GOPROXY
+        - GOCACHE
+        - GOCAR
+        - CC_ENV_NAMESPACE
+        - npm_config_loglevel
+
+logging:
+    level: info
+    peer:
+      chaincode: info
+
+# CouchDB state database settings (set via env CORE_LEDGER_STATE_COUCHDBCONFIG)
+ledger:
+    state:
+        stateDatabase: CouchDB
+        couchDBConfig:
+            maxRetries: 3
+            # etc., other parameters can be tuned

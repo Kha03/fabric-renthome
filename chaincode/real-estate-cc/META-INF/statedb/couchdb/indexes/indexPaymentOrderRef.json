@@ -1,0 +1,11 @@
+{
+  "index": {
+    "fields": [
+      "objectType",
+      "orderRef"
+    ]
+  },
+  "ddoc": "indexPaymentOrderRef",
+  "name": "indexPaymentOrderRef",
+  "type": "json"
+}

@@ -1,0 +1,11 @@
+{
+  "index": {
+    "fields": [
+      "objectType",
+      "contractId"
+    ]
+  },
+  "ddoc": "indexPaymentContract",
+  "name": "indexPaymentContract",
+  "type": "json"
+}

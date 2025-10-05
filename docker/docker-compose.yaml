@@ -1,0 +1,387 @@
+## docker/docker-compose.yaml
+
+# version: '3.7'
+networks:
+  fabric_net:
+    name: fabric_real_estate_net
+
+services:
+  # Orderer Org CA
+  ca.ordererorg.example.com:
+    container_name: ca.ordererorg.example.com
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION}
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-orderer-org
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=10054
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca-server
+      # The CA will use the following as its TLS cert/key (self-signed for demo)
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
+    ports:
+      - "10054:10054"
+    command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 10054'
+    volumes:
+      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
+      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server-config   # to mount TLS cert if present
+    networks:
+      - fabric_net
+
+  # OrgProp CA (Property owner org CA)
+  ca.orgprop.example.com:
+    container_name: ca.orgprop.example.com
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION}
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-orgprop
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7054
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 7054'
+    volumes:
+      - ../organizations/fabric-ca/orgProp:/etc/hyperledger/fabric-ca-server
+      - ../organizations/fabric-ca/orgProp:/etc/hyperledger/fabric-ca-server-config
+    networks:
+      - fabric_net
+
+  # OrgTenant CA
+  ca.orgtenant.example.com:
+    container_name: ca.orgtenant.example.com
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION}
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-orgtenant
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8054
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
+    ports:
+      - "8054:8054"
+    command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 8054'
+    volumes:
+      - ../organizations/fabric-ca/orgTenant:/etc/hyperledger/fabric-ca-server
+      - ../organizations/fabric-ca/orgTenant:/etc/hyperledger/fabric-ca-server-config
+    networks:
+      - fabric_net
+
+  # OrgLandlord CA
+  ca.orglandlord.example.com:
+    container_name: ca.orglandlord.example.com
+    image: hyperledger/fabric-ca:${FABRIC_CA_VERSION}
+    environment:
+      - FABRIC_CA_SERVER_CA_NAME=ca-orglandlord
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=9054
+      - FABRIC_CA_SERVER_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
+    ports:
+      - "9054:9054"
+    command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 9054'
+    volumes:
+      - ../organizations/fabric-ca/orgLandlord:/etc/hyperledger/fabric-ca-server
+      - ../organizations/fabric-ca/orgLandlord:/etc/hyperledger/fabric-ca-server-config
+    networks:
+      - fabric_net
+
+  # Orderer nodes
+  orderer1.ordererorg.example.com:
+    container_name: orderer1.ordererorg.example.com
+    image: hyperledger/fabric-orderer:${FABRIC_VERSION}
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererOrgMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # TLS for normal and cluster traffic
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # No system channel
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      # Admin API (OSN Admin)
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
+    command: orderer
+    ports:
+      - "7050:7050"
+      - "7053:7053"   # admin port
+    volumes:
+      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
+      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer1.ordererorg.example.com:/var/hyperledger/production/orderer
+    networks:
+      - fabric_net
+
+  orderer2.ordererorg.example.com:
+    container_name: orderer2.ordererorg.example.com
+    image: hyperledger/fabric-orderer:${FABRIC_VERSION}
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererOrgMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # TLS for normal and cluster traffic
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # No system channel
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      # Admin API (OSN Admin)
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+    command: orderer
+    ports:
+      - "8050:7050"
+      - "8053:7053"
+    volumes:
+      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
+      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer2.ordererorg.example.com:/var/hyperledger/production/orderer
+    networks:
+      - fabric_net
+
+  orderer3.ordererorg.example.com:
+    container_name: orderer3.ordererorg.example.com
+    image: hyperledger/fabric-orderer:${FABRIC_VERSION}
+    environment:
+      - FABRIC_LOGGING_SPEC=INFO
+      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+      - ORDERER_GENERAL_LISTENPORT=7050
+      - ORDERER_GENERAL_LOCALMSPID=OrdererOrgMSP
+      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
+      # TLS for normal and cluster traffic
+      - ORDERER_GENERAL_TLS_ENABLED=true
+      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # No system channel
+      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
+      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
+      # Admin API (OSN Admin)
+      - ORDERER_ADMIN_TLS_ENABLED=true
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
+      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
+      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+    command: orderer
+    ports:
+      - "9050:7050"
+      - "9053:7053"
+    volumes:
+      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
+      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
+      - orderer3.ordererorg.example.com:/var/hyperledger/production/orderer
+    networks:
+      - fabric_net
+
+  # Peer OrgProp
+  peer0.orgprop.example.com:
+    container_name: peer0.orgprop.example.com
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_real_estate_net
+      - FABRIC_LOGGING_SPEC=INFO
+      #- FABRIC_LOGGING_SPEC=DEBUG
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.orgprop.example.com
+      - CORE_PEER_ADDRESS=peer0.orgprop.example.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.orgprop.example.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.orgprop.example.com:7051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.orgprop.example.com:7051
+      - CORE_PEER_LOCALMSPID=OrgPropMSP
+      # CouchDB configuration
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.orgprop.example.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      # BCCSP configuration
+      - CORE_PEER_BCCSP_DEFAULT=SW
+      - CORE_PEER_BCCSP_SW_HASH=SHA2
+      - CORE_PEER_BCCSP_SW_SECURITY=256
+      #- CORE_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
+      # Enable the new chaincode launcher (external builder for Node chaincode)
+      #- CORE_CHAINCODE_EXTERNALBUILDERS="[{\"name\":\"docker\",\"path\":\"/opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker\"}]"
+    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    command: peer node start
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.orgprop.example.com:/var/hyperledger/production
+      #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml   # use custom core config if needed
+    ports:
+      - "7051:7051"
+    depends_on:
+      - couchdb.orgprop.example.com
+    networks:
+      - fabric_net
+
+  # Peer OrgTenant
+  peer0.orgtenant.example.com:
+    container_name: peer0.orgtenant.example.com
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_real_estate_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.orgtenant.example.com
+      - CORE_PEER_ADDRESS=peer0.orgtenant.example.com:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.orgtenant.example.com:8052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.orgtenant.example.com:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.orgtenant.example.com:8051
+      - CORE_PEER_LOCALMSPID=OrgTenantMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.orgtenant.example.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      # BCCSP configuration
+      - CORE_PEER_BCCSP_DEFAULT=SW
+      - CORE_PEER_BCCSP_SW_HASH=SHA2
+      - CORE_PEER_BCCSP_SW_SECURITY=256
+      #- CORE_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
+      #- CORE_CHAINCODE_EXTERNALBUILDERS="[{\"name\":\"docker\",\"path\":\"/opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker\"}]"
+    command: peer node start
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.orgtenant.example.com:/var/hyperledger/production
+      #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml
+    ports:
+      - "8051:8051"
+    depends_on:
+      - couchdb.orgtenant.example.com
+    networks:
+      - fabric_net
+
+  # Peer OrgLandlord
+  peer0.orglandlord.example.com:
+    container_name: peer0.orglandlord.example.com
+    image: hyperledger/fabric-peer:${FABRIC_VERSION}
+    environment:
+      - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=fabric_real_estate_net
+      - FABRIC_LOGGING_SPEC=INFO
+      - CORE_PEER_TLS_ENABLED=true
+      - CORE_PEER_PROFILE_ENABLED=true
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/fabric/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/fabric/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/fabric/tls/ca.crt
+      - CORE_PEER_ID=peer0.orglandlord.example.com
+      - CORE_PEER_ADDRESS=peer0.orglandlord.example.com:9051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:9051
+      - CORE_PEER_CHAINCODEADDRESS=peer0.orglandlord.example.com:9052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:9052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer0.orglandlord.example.com:9051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer0.orglandlord.example.com:9051
+      - CORE_PEER_LOCALMSPID=OrgLandlordMSP
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=couchdb.orglandlord.example.com:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=adminpw
+      # BCCSP configuration
+      - CORE_PEER_BCCSP_DEFAULT=SW
+      - CORE_PEER_BCCSP_SW_HASH=SHA2
+      - CORE_PEER_BCCSP_SW_SECURITY=256
+      #- CORE_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
+      #- CORE_CHAINCODE_EXTERNALBUILDERS="[{\"name\":\"docker\",\"path\":\"/opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker\"}]"
+    command: peer node start
+    volumes:
+      - /var/run/docker.sock:/host/var/run/docker.sock
+      - ../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/msp:/etc/hyperledger/fabric/msp
+      - ../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls:/etc/hyperledger/fabric/tls
+      - peer0.orglandlord.example.com:/var/hyperledger/production
+      #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml
+    ports:
+      - "9051:9051"
+    depends_on:
+      - couchdb.orglandlord.example.com
+    networks:
+      - fabric_net
+
+  # CouchDB for OrgProp Peer
+  couchdb.orgprop.example.com:
+    container_name: couchdb.orgprop.example.com
+    image: couchdb:${COUCHDB_VERSION}
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    ports:
+      - "5984:5984"   # optionally expose if needed for Fauxton UI
+    networks:
+      - fabric_net
+
+  # CouchDB for OrgTenant Peer
+  couchdb.orgtenant.example.com:
+    container_name: couchdb.orgtenant.example.com
+    image: couchdb:${COUCHDB_VERSION}
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    networks:
+      - fabric_net
+    ports:
+      - "6984:5984"
+
+  # CouchDB for OrgLandlord Peer
+  couchdb.orglandlord.example.com:
+    container_name: couchdb.orglandlord.example.com
+    image: couchdb:${COUCHDB_VERSION}
+    environment:
+      - COUCHDB_USER=admin
+      - COUCHDB_PASSWORD=adminpw
+    networks:
+      - fabric_net
+    ports:
+      - "7984:5984"
+      
+volumes:
+  orderer1.ordererorg.example.com:
+  orderer2.ordererorg.example.com:
+  orderer3.ordererorg.example.com:
+  peer0.orgprop.example.com:
+  peer0.orgtenant.example.com:
+  peer0.orglandlord.example.com:

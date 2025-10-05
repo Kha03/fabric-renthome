@@ -1,0 +1,20 @@
+[
+  {
+    "name": "contractPrivate",
+    "policy": "OR('OrgPropMSP.member','OrgTenantMSP.member','OrgLandlordMSP.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 3,
+    "blockToLive": 1000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  },
+  {
+    "name": "paymentPrivate", 
+    "policy": "OR('OrgPropMSP.member','OrgTenantMSP.member','OrgLandlordMSP.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 3,
+    "blockToLive": 1000,
+    "memberOnlyRead": true,
+    "memberOnlyWrite": true
+  }
+]

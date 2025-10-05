@@ -1,0 +1,40 @@
+# orderer.yaml - Orderer configuration (key excerpts)
+General:
+    ListenAddress: 0.0.0.0
+    ListenPort: 7050
+    TLS:
+        Enabled: true
+        PrivateKey: tls/server.key
+        Certificate: tls/server.crt
+        RootCAs:
+            - tls/ca.crt
+        ClientAuthRequired: true
+        ClientRootCAs:
+            - tls/ca.crt
+    Cluster:
+        # Use the same TLS certs for cluster communications
+        ClientCertificate: tls/server.crt
+        ClientPrivateKey: tls/server.key
+        RootCAs:
+            - tls/ca.crt
+
+FileLedger:
+    Location: /var/hyperledger/production/orderer
+
+# Enable channel participation API (no system channel)
+ChannelParticipation:
+    Enabled: true
+
+# Admin server for OSN (note: separate from operations service)
+Admin:
+    ListenAddress: 0.0.0.0:7053
+    TLS:
+        Enabled: true
+        PrivateKey: tls/server.key
+        Certificate: tls/server.crt
+        # The admin client must present a cert signed by a trusted root:
+        ClientAuthRequired: true
+        ClientRootCAs:
+            - tls/ca.crt
+
+# RAFT consensus parameters (timeouts, etc.) could be tuned here, but default is fine

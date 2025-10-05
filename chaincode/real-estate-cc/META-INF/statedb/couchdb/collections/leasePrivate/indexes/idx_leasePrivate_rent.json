@@ -1,0 +1,8 @@
+{
+  "index": {
+    "fields": ["rent"]
+  },
+  "ddoc": "idx-rent-doc",
+  "name": "indexLeasePrivateByRent",
+  "type": "json"
+}

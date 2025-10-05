@@ -1,0 +1,146 @@
+{
+  "name": "real-estate-network",
+  "version": "1.0.0",
+  "client": {
+    "organization": "OrgProp",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        }
+      }
+    }
+  },
+  "organizations": {
+    "OrgProp": {
+      "mspid": "OrgPropMSP",
+      "peers": [
+        "peer0.orgprop.example.com"
+      ],
+      "certificateAuthorities": [
+        "ca-orgprop"
+      ]
+    },
+    "OrgTenant": {
+      "mspid": "OrgTenantMSP", 
+      "peers": [
+        "peer0.orgtenant.example.com"
+      ],
+      "certificateAuthorities": [
+        "ca-orgtenant"
+      ]
+    },
+    "OrgLandlord": {
+      "mspid": "OrgLandlordMSP",
+      "peers": [
+        "peer0.orglandlord.example.com"
+      ],
+      "certificateAuthorities": [
+        "ca-orglandlord"
+      ]
+    }
+  },
+  "peers": {
+    "peer0.orgprop.example.com": {
+      "url": "grpcs://localhost:7051",
+      "tlsCACerts": {
+        "path": "../organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/tls/ca.crt"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.orgprop.example.com",
+        "hostnameOverride": "peer0.orgprop.example.com"
+      }
+    },
+    "peer0.orgtenant.example.com": {
+      "url": "grpcs://localhost:8051",
+      "tlsCACerts": {
+        "path": "../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls/ca.crt"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.orgtenant.example.com",
+        "hostnameOverride": "peer0.orgtenant.example.com"
+      }
+    },
+    "peer0.orglandlord.example.com": {
+      "url": "grpcs://localhost:9051",
+      "tlsCACerts": {
+        "path": "../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls/ca.crt"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.orglandlord.example.com",
+        "hostnameOverride": "peer0.orglandlord.example.com"
+      }
+    }
+  },
+  "certificateAuthorities": {
+    "ca-orgprop": {
+      "url": "https://localhost:7054",
+      "caName": "ca-orgprop",
+      "tlsCACerts": {
+        "path": "../organizations/fabric-ca/orgProp/ca-cert.pem"
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    },
+    "ca-orgtenant": {
+      "url": "https://localhost:8054", 
+      "caName": "ca-orgtenant",
+      "tlsCACerts": {
+        "path": "../organizations/fabric-ca/orgTenant/ca-cert.pem"
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    },
+    "ca-orglandlord": {
+      "url": "https://localhost:9054",
+      "caName": "ca-orglandlord", 
+      "tlsCACerts": {
+        "path": "../organizations/fabric-ca/orgLandlord/ca-cert.pem"
+      },
+      "httpOptions": {
+        "verify": false
+      }
+    }
+  },
+  "channels": {
+    "rentalchannel": {
+      "orderers": [
+        "orderer1.ordererorg.example.com"
+      ],
+      "peers": {
+        "peer0.orgprop.example.com": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        },
+        "peer0.orgtenant.example.com": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        },
+        "peer0.orglandlord.example.com": {
+          "endorsingPeer": true,
+          "chaincodeQuery": true,
+          "ledgerQuery": true,
+          "eventSource": true
+        }
+      }
+    }
+  },
+  "orderers": {
+    "orderer1.ordererorg.example.com": {
+      "url": "grpcs://localhost:7050",
+      "tlsCACerts": {
+        "path": "../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/ca.crt"
+      },
+      "grpcOptions": {
+        "ssl-target-name-override": "orderer1.ordererorg.example.com",
+        "hostnameOverride": "orderer1.ordererorg.example.com"
+      }
+    }
+  }
+}

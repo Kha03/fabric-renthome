@@ -1,0 +1,11 @@
+{
+  "index": {
+    "fields": [
+      "objectType", 
+      "landlordId"
+    ]
+  },
+  "ddoc": "indexContractLandlord",
+  "name": "indexContractLandlord",
+  "type": "json"
+}
