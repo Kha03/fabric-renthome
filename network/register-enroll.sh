@@ -143,13 +143,11 @@ prepare_org_msp "ordererOrg" "ordererorg.example.com" 10054 "ca-orderer-org" "or
 # Register identities
 export FABRIC_CA_CLIENT_HOME="${PWD}/../organizations/fabric-ca/${org}"
 register_identity "${ca_name}" "orderer1"        "orderer1pw"        "orderer" "${org}.department1" ""                         "${org}"
-register_identity "${ca_name}" "orderer2"        "orderer2pw"        "orderer" "${org}.department1" ""                         "${org}"
-register_identity "${ca_name}" "orderer3"        "orderer3pw"        "orderer" "${org}.department1" ""                         "${org}"
 register_identity "${ca_name}" "ordererAdmin" "ordererAdminPW" "admin" "${org}.department1" \
 "hf.Registrar.Roles=*,hf.Registrar.Attributes=*,hf.Revoker=true,hf.GenCRL=true,hf.AffiliationMgr=true" "${org}"
 
 # Enroll orderers + TLS + Admin
-for i in 1 2 3; do
+for i in 1; do
   echo "## Enrolling Orderer${i}"
   MSP_DIR="${PWD}/../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer${i}.ordererorg.example.com/msp"
   if [ ! -f "${MSP_DIR}/signcerts/cert.pem" ]; then

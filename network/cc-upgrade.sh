@@ -9,8 +9,8 @@ export FABRIC_CFG_PATH=${PWD}/../config
 
 CHANNEL_NAME="rentalchannel"
 CC_NAME="real-estate-cc"
-NEW_VERSION="1.3.0"
-NEW_SEQUENCE=4
+NEW_VERSION="1.5.0"
+NEW_SEQUENCE=3
 CC_LABEL="${CC_NAME}_${NEW_VERSION}"
 CC_PATH="../chaincode/real-estate-cc"
 CC_LANG="node"
