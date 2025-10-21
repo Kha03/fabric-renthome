@@ -8,6 +8,7 @@ General:
         Certificate: tls/server.crt
         RootCAs:
             - tls/ca.crt
+        # IMPORTANT: ClientAuthRequired=true means backend must use client certificates
         ClientAuthRequired: true
         ClientRootCAs:
             - tls/ca.crt
@@ -26,8 +27,9 @@ ChannelParticipation:
     Enabled: true
 
 # Admin server for OSN (note: separate from operations service)
+# Using internal port 9443 for better security (not exposed publicly)
 Admin:
-    ListenAddress: 0.0.0.0:7053
+    ListenAddress: 0.0.0.0:9443
     TLS:
         Enabled: true
         PrivateKey: tls/server.key

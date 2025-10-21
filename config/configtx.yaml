@@ -44,8 +44,6 @@ Organizations:
         # The OrdererEndpoints field is only used in the Application section context
         OrdererEndpoints:
             - orderer1.ordererorg.example.com:7050
-            - orderer2.ordererorg.example.com:7050
-            - orderer3.ordererorg.example.com:7050
 
     - &OrgProp
         Name: OrgPropMSP
@@ -106,22 +104,12 @@ Orderer: &OrdererDefaults
     OrdererType: etcdraft
     Addresses:
         - orderer1.ordererorg.example.com:7050
-        - orderer2.ordererorg.example.com:7050
-        - orderer3.ordererorg.example.com:7050
     EtcdRaft:
         Consenters:
             - Host: orderer1.ordererorg.example.com
               Port: 7050
               ClientTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt
               ServerTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt
-            - Host: orderer2.ordererorg.example.com
-              Port: 7050
-              ClientTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/tls/server.crt
-              ServerTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/tls/server.crt
-            - Host: orderer3.ordererorg.example.com
-              Port: 7050
-              ClientTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/tls/server.crt
-              ServerTLSCert: ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/tls/server.crt
     BatchTimeout: 2s
     BatchSize:
         MaxMessageCount: 10

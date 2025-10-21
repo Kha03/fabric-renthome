@@ -6,7 +6,7 @@ COMPOSE_FILE="../docker/docker-compose.yaml"
 ./ca-tls-gen.sh
 
 echo "Starting Fabric CAs..."
-docker-compose -f $COMPOSE_FILE up -d \
+docker compose -f $COMPOSE_FILE up -d \
   ca.ordererorg.example.com \
   ca.orgprop.example.com \
   ca.orgtenant.example.com \

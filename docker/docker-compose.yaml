@@ -19,11 +19,11 @@ services:
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
     ports:
-      - "10054:10054"
+      - "10054:10054"  # CA port - close in AWS SG after enrollment/registration complete
     command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 10054'
     volumes:
-      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
-      - ../organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server-config   # to mount TLS cert if present
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/ordererOrg:/etc/hyperledger/fabric-ca-server-config   # to mount TLS cert if present
     networks:
       - fabric_net
 
@@ -39,11 +39,11 @@ services:
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
     ports:
-      - "7054:7054"
+      - "7054:7054"   # CA port - close in AWS SG after enrollment/registration complete
     command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 7054'
     volumes:
-      - ../organizations/fabric-ca/orgProp:/etc/hyperledger/fabric-ca-server
-      - ../organizations/fabric-ca/orgProp:/etc/hyperledger/fabric-ca-server-config
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/orgProp:/etc/hyperledger/fabric-ca-server
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/orgProp:/etc/hyperledger/fabric-ca-server-config
     networks:
       - fabric_net
 
@@ -59,11 +59,11 @@ services:
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
     ports:
-      - "8054:8054"
+      - "8054:8054"   # CA port - close in AWS SG after enrollment/registration complete
     command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 8054'
     volumes:
-      - ../organizations/fabric-ca/orgTenant:/etc/hyperledger/fabric-ca-server
-      - ../organizations/fabric-ca/orgTenant:/etc/hyperledger/fabric-ca-server-config
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/orgTenant:/etc/hyperledger/fabric-ca-server
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/orgTenant:/etc/hyperledger/fabric-ca-server-config
     networks:
       - fabric_net
 
@@ -79,11 +79,11 @@ services:
       - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/tls-cert.pem
       - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/tls-key.pem
     ports:
-      - "9054:9054"
+      - "9054:9054"   # CA port - close in AWS SG after enrollment/registration complete
     command: sh -c 'fabric-ca-server start -d -b admin:adminpw --port 9054'
     volumes:
-      - ../organizations/fabric-ca/orgLandlord:/etc/hyperledger/fabric-ca-server
-      - ../organizations/fabric-ca/orgLandlord:/etc/hyperledger/fabric-ca-server-config
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/orgLandlord:/etc/hyperledger/fabric-ca-server
+      - /opt/fabric/fabric-real-estate-network/organizations/fabric-ca/orgLandlord:/etc/hyperledger/fabric-ca-server-config
     networks:
       - fabric_net
 
@@ -110,7 +110,7 @@ services:
       - ORDERER_CHANNELPARTICIPATION_ENABLED=true
       # Admin API (OSN Admin)
       - ORDERER_ADMIN_TLS_ENABLED=true
-      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
+      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:9443
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
@@ -118,90 +118,16 @@ services:
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     ports:
-      - "7050:7050"
-      - "7053:7053"   # admin port
+      - "7050:7050"   # KEEP OPEN: Orderer port for peers & chaincode commits
+      - "9443:9443"   # admin port (internal use only - more secure)
     volumes:
-      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
-      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
+      - /opt/fabric/fabric-real-estate-network/organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
+      - /opt/fabric/fabric-real-estate-network/organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
       - orderer1.ordererorg.example.com:/var/hyperledger/production/orderer
     networks:
       - fabric_net
 
-  orderer2.ordererorg.example.com:
-    container_name: orderer2.ordererorg.example.com
-    image: hyperledger/fabric-orderer:${FABRIC_VERSION}
-    environment:
-      - FABRIC_LOGGING_SPEC=INFO
-      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_LISTENPORT=7050
-      - ORDERER_GENERAL_LOCALMSPID=OrdererOrgMSP
-      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
-      # TLS for normal and cluster traffic
-      - ORDERER_GENERAL_TLS_ENABLED=true
-      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      # No system channel
-      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
-      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
-      # Admin API (OSN Admin)
-      - ORDERER_ADMIN_TLS_ENABLED=true
-      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
-      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-    command: orderer
-    ports:
-      - "8050:7050"
-      - "8053:7053"
-    volumes:
-      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
-      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer2.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
-      - orderer2.ordererorg.example.com:/var/hyperledger/production/orderer
-    networks:
-      - fabric_net
 
-  orderer3.ordererorg.example.com:
-    container_name: orderer3.ordererorg.example.com
-    image: hyperledger/fabric-orderer:${FABRIC_VERSION}
-    environment:
-      - FABRIC_LOGGING_SPEC=INFO
-      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_LISTENPORT=7050
-      - ORDERER_GENERAL_LOCALMSPID=OrdererOrgMSP
-      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
-      # TLS for normal and cluster traffic
-      - ORDERER_GENERAL_TLS_ENABLED=true
-      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      # No system channel
-      - ORDERER_GENERAL_BOOTSTRAPMETHOD=none
-      - ORDERER_CHANNELPARTICIPATION_ENABLED=true
-      # Admin API (OSN Admin)
-      - ORDERER_ADMIN_TLS_ENABLED=true
-      - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7053
-      - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-    command: orderer
-    ports:
-      - "9050:7050"
-      - "9053:7053"
-    volumes:
-      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
-      - ../organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer3.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
-      - orderer3.ordererorg.example.com:/var/hyperledger/production/orderer
-    networks:
-      - fabric_net
 
   # Peer OrgProp
   peer0.orgprop.example.com:
@@ -241,12 +167,12 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
-      - ../organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/msp:/etc/hyperledger/fabric/msp
-      - ../organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/tls:/etc/hyperledger/fabric/tls
+      - /opt/fabric/fabric-real-estate-network/organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/msp:/etc/hyperledger/fabric/msp
+      - /opt/fabric/fabric-real-estate-network/organizations/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.orgprop.example.com:/var/hyperledger/production
       #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml   # use custom core config if needed
     ports:
-      - "7051:7051"
+      - "7051:7051"   # KEEP OPEN: Primary peer for backend communication
     depends_on:
       - couchdb.orgprop.example.com
     networks:
@@ -286,12 +212,12 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
-      - ../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/msp:/etc/hyperledger/fabric/msp
-      - ../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls:/etc/hyperledger/fabric/tls
+      - /opt/fabric/fabric-real-estate-network/organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/msp:/etc/hyperledger/fabric/msp
+      - /opt/fabric/fabric-real-estate-network/organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.orgtenant.example.com:/var/hyperledger/production
       #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml
     ports:
-      - "8051:8051"
+      - "8051:8051"   # ENABLED: OrgTenant peer for backend communication
     depends_on:
       - couchdb.orgtenant.example.com
     networks:
@@ -331,12 +257,12 @@ services:
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
-      - ../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/msp:/etc/hyperledger/fabric/msp
-      - ../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls:/etc/hyperledger/fabric/tls
+      - /opt/fabric/fabric-real-estate-network/organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/msp:/etc/hyperledger/fabric/msp
+      - /opt/fabric/fabric-real-estate-network/organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls:/etc/hyperledger/fabric/tls
       - peer0.orglandlord.example.com:/var/hyperledger/production
       #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml
     ports:
-      - "9051:9051"
+      - "9051:9051"   # ENABLED: OrgLandlord peer for backend communication
     depends_on:
       - couchdb.orglandlord.example.com
     networks:
@@ -350,7 +276,7 @@ services:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
     ports:
-      - "5984:5984"   # optionally expose if needed for Fauxton UI
+      - "5984:5984"   # Optional: Fauxton UI access - can close in AWS SG if not needed
     networks:
       - fabric_net
 
@@ -361,10 +287,10 @@ services:
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
+    # ports: # Internal access only - no external exposure needed
+    #   - "6984:5984"
     networks:
       - fabric_net
-    ports:
-      - "6984:5984"
 
   # CouchDB for OrgLandlord Peer
   couchdb.orglandlord.example.com:
@@ -373,15 +299,13 @@ services:
     environment:
       - COUCHDB_USER=admin
       - COUCHDB_PASSWORD=adminpw
+    # ports: # Internal access only - no external exposure needed
+    #   - "7984:5984"
     networks:
       - fabric_net
-    ports:
-      - "7984:5984"
       
 volumes:
   orderer1.ordererorg.example.com:
-  orderer2.ordererorg.example.com:
-  orderer3.ordererorg.example.com:
   peer0.orgprop.example.com:
   peer0.orgtenant.example.com:
   peer0.orglandlord.example.com:
