@@ -1,0 +1,87 @@
+{
+  "name": "real-estate-network",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "client": {
+    "tlsEnable": true,
+    "adminCredential": {
+      "id": "exploreradmin",
+      "password": "exploreradminpw"
+    },
+    "enableAuthentication": true,
+    "organization": "OrgPropMSP",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        },
+        "orderer": "300"
+      }
+    }
+  },
+  "channels": {
+    "rentalchannel": {
+      "peers": {
+        "peer0.orgprop.example.com": {},
+        "peer0.orgtenant.example.com": {},
+        "peer0.orglandlord.example.com": {}
+      }
+    }
+  },
+  "organizations": {
+    "OrgPropMSP": {
+      "mspid": "OrgPropMSP",
+      "fullpath": true,
+      "adminPrivateKey": {
+        "path": "/tmp/crypto/peerOrganizations/orgprop.example.com/users/Admin@orgprop.example.com/msp/keystore/priv_sk"
+      },
+      "peers": [
+        "peer0.orgprop.example.com"
+      ],
+      "signedCert": {
+        "path": "/tmp/crypto/peerOrganizations/orgprop.example.com/users/Admin@orgprop.example.com/msp/signcerts/cert.pem"
+      }
+    },
+    "OrgTenantMSP": {
+      "mspid": "OrgTenantMSP",
+      "peers": [
+        "peer0.orgtenant.example.com"
+      ]
+    },
+    "OrgLandlordMSP": {
+      "mspid": "OrgLandlordMSP",
+      "peers": [
+        "peer0.orglandlord.example.com"
+      ]
+    }
+  },
+  "peers": {
+    "peer0.orgprop.example.com": {
+      "tlsCACerts": {
+        "path": "/tmp/crypto/peerOrganizations/orgprop.example.com/peers/peer0.orgprop.example.com/tls/ca.crt"
+      },
+      "url": "grpcs://peer0.orgprop.example.com:7051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.orgprop.example.com"
+      }
+    },
+    "peer0.orgtenant.example.com": {
+      "tlsCACerts": {
+        "path": "/tmp/crypto/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls/ca.crt"
+      },
+      "url": "grpcs://peer0.orgtenant.example.com:8051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.orgtenant.example.com"
+      }
+    },
+    "peer0.orglandlord.example.com": {
+      "tlsCACerts": {
+        "path": "/tmp/crypto/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls/ca.crt"
+      },
+      "url": "grpcs://peer0.orglandlord.example.com:9051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.orglandlord.example.com"
+      }
+    }
+  }
+}

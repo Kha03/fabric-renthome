@@ -1,0 +1,9 @@
+{
+  "network-configs": {
+    "real-estate-network": {
+      "name": "Real Estate Network",
+      "profile": "./connection-profile/real-estate-network.json"
+    }
+  },
+  "license": "Apache-2.0"
+}
