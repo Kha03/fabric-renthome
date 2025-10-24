@@ -51,6 +51,44 @@ Follow these steps to launch the network, deploy chaincode, and run the demo sce
 Bring up the Certificate Authority (CA) containers for each organization and register/enroll all identities (orderers, peers, admins, application users):
 
 ```bash
+```bash
 cd network
 ./ca-up.sh        # Start CA servers for OrdererOrg, OrgProp, OrgTenant, OrgLandlord
 ./register-enroll.sh   # Register and enroll identities, generate MSP and TLS certs for all entities
+```
+
+## 🔍 Hyperledger Explorer - Blockchain Visualization
+
+Hyperledger Explorer has been configured to provide a web-based interface for monitoring and exploring your blockchain network.
+
+### Quick Start Explorer
+
+```bash
+cd network
+./explorer-up.sh    # Start Hyperledger Explorer
+```
+
+**Access Explorer:**
+- URL: http://localhost:8080 (or http://<SERVER_IP>:8080 for cloud deployments)
+- Username: `exploreradmin`
+- Password: `exploreradminpw`
+
+**Explorer Features:**
+- View all blocks and transactions in real-time
+- Monitor network topology and peer status
+- Inspect chaincode deployments and endorsement policies
+- Query blockchain data through web interface
+- View transaction read/write sets
+
+**Stop Explorer:**
+```bash
+cd network
+./explorer-down.sh
+```
+
+**Documentation:**
+- Quick Start: See `EXPLORER_QUICK_START.md`
+- Full Guide: See `EXPLORER_SETUP_GUIDE.md`
+- Configuration: See `explorer/` directory
+
+```

@@ -109,7 +109,9 @@ class RealEstateContract extends Contract {
                 tenant: null
             },
             firstPayment: null,
-            penalties: []
+            penalties: [],
+            currentExtensionNumber: 0,
+            extensions: []
         };
 
         await ctx.stub.putState(contractId, Buffer.from(JSON.stringify(contract)));
@@ -292,6 +294,98 @@ class RealEstateContract extends Contract {
             timestamp: new Date().toISOString()
         };
         ctx.stub.setEvent('ContractTerminated', Buffer.from(JSON.stringify(eventPayload)));
+
+        return contract;
+    }
+
+    /**
+     * Record contract extension
+     * Ghi nhận gia hạn hợp đồng đã được chấp thuận từ BE
+     */
+    async RecordContractExtension(ctx, contractId, newEndDate, newRentAmount, extensionAgreementHash, extensionNotes) {
+        // Validate required parameters
+        if (!contractId || !newEndDate || !newRentAmount) {
+            throw new Error('Missing required parameters: contractId, newEndDate, newRentAmount');
+        }
+
+        // Get contract
+        const contractBytes = await ctx.stub.getState(contractId);
+        if (!contractBytes || contractBytes.length === 0) {
+            throw new Error(`Contract ${contractId} does not exist`);
+        }
+
+        const contract = JSON.parse(contractBytes.toString());
+
+        // Validate contract is ACTIVE
+        if (contract.status !== 'ACTIVE') {
+            throw new Error(`Contract ${contractId} must be ACTIVE to record extension. Current status: ${contract.status}`);
+        }
+
+        // Validate caller is either landlord or tenant
+        const { isLandlord, isTenant } = this._validateCallerIsParty(ctx, contract);
+
+        // Get caller identity for audit trail
+        const clientIdentity = ctx.clientIdentity;
+        const recorderId = this._extractUserIdFromIdentity(clientIdentity);
+
+        // Validate and parse dates
+        const currentEndDate = new Date(contract.endDate);
+        const extendedEndDate = new Date(newEndDate);
+
+        if (extendedEndDate <= currentEndDate) {
+            throw new Error(`New end date ${newEndDate} must be after current end date ${contract.endDate}`);
+        }
+
+        // Validate new rent amount
+        const newRent = parseFloat(newRentAmount);
+        if (newRent <= 0) {
+            throw new Error('New rent amount must be greater than 0');
+        }
+
+        // Initialize extensions array if not exists
+        if (!contract.extensions) {
+            contract.extensions = [];
+        }
+        if (!contract.currentExtensionNumber) {
+            contract.currentExtensionNumber = 0;
+        }
+
+        // Create extension record
+        const extensionNumber = contract.currentExtensionNumber + 1;
+        const extensionRecord = {
+            extensionNumber: extensionNumber,
+            previousEndDate: contract.endDate,
+            newEndDate: newEndDate,
+            previousRentAmount: contract.rentAmount,
+            newRentAmount: newRent,
+            extensionAgreementHash: extensionAgreementHash || null,
+            notes: extensionNotes || '',
+            recordedBy: recorderId,
+            recordedByRole: isLandlord ? 'landlord' : 'tenant',
+            recordedAt: new Date().toISOString(),
+            status: 'ACTIVE'
+        };
+
+        // Update contract
+        contract.extensions.push(extensionRecord);
+        contract.currentExtensionNumber = extensionNumber;
+        contract.endDate = newEndDate;
+        contract.rentAmount = newRent;
+        contract.updatedAt = new Date().toISOString();
+
+        await ctx.stub.putState(contractId, Buffer.from(JSON.stringify(contract)));
+
+        // Emit event
+        const eventPayload = {
+            contractId: contractId,
+            extensionNumber: extensionNumber,
+            previousEndDate: extensionRecord.previousEndDate,
+            newEndDate: newEndDate,
+            previousRentAmount: extensionRecord.previousRentAmount,
+            newRentAmount: newRent,
+            timestamp: new Date().toISOString()
+        };
+        ctx.stub.setEvent('ContractExtended', Buffer.from(JSON.stringify(eventPayload)));
 
         return contract;
     }
@@ -577,12 +671,12 @@ class RealEstateContract extends Contract {
 
         if (!reason) throw new Error('Penalty reason is required');
 
-        // Validate caller is authorized (both parties can record penalties)
-        const { isLandlord, isTenant } = this._validateCallerIsParty(ctx, contract);
+        // Validate caller is authorized (parties or admin can record penalties)
+        const { isLandlord, isTenant, isAdmin, callerUserId } = this._validateCallerIsPartyOrAdmin(ctx, contract);
 
         // Get actual caller identity for audit trail
         const clientIdentity = ctx.clientIdentity;
-        const penaltyRecorderId = this._extractUserIdFromIdentity(clientIdentity);
+        const penaltyRecorderId = callerUserId || this._extractUserIdFromIdentity(clientIdentity);
 
         // Validate amount
         const penaltyAmount = parseFloat(amount);
@@ -595,7 +689,7 @@ class RealEstateContract extends Contract {
             amount: penaltyAmount,
             reason,
             recordedBy: penaltyRecorderId,
-            recordedByRole: isLandlord ? 'landlord' : 'tenant',
+            recordedByRole: isAdmin ? 'admin' : (isLandlord ? 'landlord' : 'tenant'),
             timestamp: new Date().toISOString()
         });
 
@@ -611,6 +705,94 @@ class RealEstateContract extends Contract {
         })));
 
         return contract;
+    }
+
+    /**
+     * Create payment schedule for contract extension
+     * Tạo lịch thanh toán cho phần gia hạn hợp đồng
+     */
+    async CreateExtensionPaymentSchedule(ctx, contractId, extensionNumber) {
+        // Validate required parameters
+        if (!contractId || !extensionNumber) {
+            throw new Error('Missing required parameters: contractId, extensionNumber');
+        }
+
+        // Get contract
+        const contractBytes = await ctx.stub.getState(contractId);
+        if (!contractBytes || contractBytes.length === 0) {
+            throw new Error(`Contract ${contractId} does not exist`);
+        }
+
+        const contract = JSON.parse(contractBytes.toString());
+
+        // Validate contract is ACTIVE
+        if (contract.status !== 'ACTIVE') {
+            throw new Error(`Contract ${contractId} must be ACTIVE. Current status: ${contract.status}`);
+        }
+
+        // Find the extension record
+        const extNum = parseInt(extensionNumber);
+        const extension = contract.extensions?.find(ext => ext.extensionNumber === extNum);
+
+        if (!extension) {
+            throw new Error(`Extension number ${extensionNumber} not found for contract ${contractId}`);
+        }
+
+        // Get the last payment period to continue from there
+        const lastPeriod = await this._getLastPaymentPeriod(ctx, contractId);
+        let period = lastPeriod + 1;
+
+        // Start date is the day after previous end date
+        const previousEndDate = new Date(extension.previousEndDate);
+        const newEndDate = new Date(extension.newEndDate);
+
+        // For test schedule (5 hours interval)
+        let currentDate = new Date(previousEndDate);
+        currentDate.setHours(currentDate.getHours() + 5); // Start 5 hours after old end date
+
+        const schedules = [];
+
+        while (currentDate < newEndDate) {
+            const dueDate = new Date(currentDate);
+
+            // Create composite key: payment~contractId~period
+            const paymentKey = ctx.stub.createCompositeKey(
+                'payment',
+                [contractId, period.toString().padStart(3, '0')]
+            );
+
+            const paymentSchedule = {
+                objectType: 'payment',
+                paymentId: `${contractId}-payment-${period.toString().padStart(3, '0')}`,
+                contractId,
+                period,
+                amount: extension.newRentAmount, // Use new rent amount from extension
+                status: 'SCHEDULED',
+                dueDate: dueDate.toISOString(),
+                extensionNumber: extNum, // Mark which extension this payment belongs to
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            await ctx.stub.putState(paymentKey, Buffer.from(JSON.stringify(paymentSchedule)));
+            schedules.push(paymentSchedule);
+
+            // Increment by 5 hours for test schedule
+            currentDate.setHours(currentDate.getHours() + 5);
+            period++;
+        }
+
+        // Emit event
+        ctx.stub.setEvent('ExtensionPaymentScheduleCreated', Buffer.from(JSON.stringify({
+            contractId,
+            extensionNumber: extNum,
+            totalSchedules: schedules.length,
+            startPeriod: lastPeriod + 1,
+            endPeriod: period - 1,
+            timestamp: new Date().toISOString()
+        })));
+
+        return schedules;
     }
 
     // ========== PAYMENT MANAGEMENT ==========
@@ -944,6 +1126,93 @@ class RealEstateContract extends Contract {
         return filteredResults;
     }
 
+    /**
+     * Query contract extensions by contract ID
+     */
+    async QueryContractExtensions(ctx, contractId) {
+        // Get contract
+        const contractBytes = await ctx.stub.getState(contractId);
+        if (!contractBytes || contractBytes.length === 0) {
+            throw new Error(`Contract ${contractId} does not exist`);
+        }
+
+        const contract = JSON.parse(contractBytes.toString());
+
+        // Validate caller has read access
+        this._validateReadAccess(ctx, contract);
+
+        // Return extensions array
+        return {
+            contractId: contractId,
+            currentExtensionNumber: contract.currentExtensionNumber || 0,
+            extensions: contract.extensions || []
+        };
+    }
+
+    /**
+     * Get active extension for a contract
+     */
+    async GetActiveExtension(ctx, contractId) {
+        // Get contract
+        const contractBytes = await ctx.stub.getState(contractId);
+        if (!contractBytes || contractBytes.length === 0) {
+            throw new Error(`Contract ${contractId} does not exist`);
+        }
+
+        const contract = JSON.parse(contractBytes.toString());
+
+        // Validate caller has read access
+        this._validateReadAccess(ctx, contract);
+
+        // Get current extension
+        if (contract.currentExtensionNumber && contract.currentExtensionNumber > 0) {
+            const activeExtension = contract.extensions?.find(
+                ext => ext.extensionNumber === contract.currentExtensionNumber
+            );
+
+            if (activeExtension) {
+                return {
+                    contractId: contractId,
+                    hasActiveExtension: true,
+                    extension: activeExtension
+                };
+            }
+        }
+
+        return {
+            contractId: contractId,
+            hasActiveExtension: false,
+            extension: null
+        };
+    }
+
+    /**
+     * Query all contracts with extensions
+     */
+    async QueryContractsWithExtensions(ctx) {
+        const query = {
+            selector: {
+                objectType: 'contract',
+                currentExtensionNumber: { $gt: 0 }
+            }
+        };
+
+        const results = await this._getQueryResultForQueryString(ctx, JSON.stringify(query));
+
+        // Return summary info
+        return results.map(contract => ({
+            contractId: contract.contractId,
+            landlordId: contract.landlordId,
+            tenantId: contract.tenantId,
+            status: contract.status,
+            currentExtensionNumber: contract.currentExtensionNumber,
+            originalEndDate: contract.extensions?.[0]?.previousEndDate || contract.endDate,
+            currentEndDate: contract.endDate,
+            currentRentAmount: contract.rentAmount,
+            totalExtensions: contract.extensions?.length || 0
+        }));
+    }
+
     // ========== UTILITY METHODS ==========
 
     /**
@@ -1033,6 +1302,35 @@ class RealEstateContract extends Contract {
 
         await resultsIterator.close();
         return results;
+    }
+
+    /**
+     * Helper method to get the last payment period for a contract
+     */
+    async _getLastPaymentPeriod(ctx, contractId) {
+        // Query all payments for this contract (no sort to avoid index requirement)
+        const query = {
+            selector: {
+                objectType: 'payment',
+                contractId: contractId
+            }
+        };
+
+        const results = await this._getQueryResultForQueryString(ctx, JSON.stringify(query));
+
+        if (results && results.length > 0) {
+            // Find max period client-side
+            let maxPeriod = 0;
+            for (const payment of results) {
+                if (payment.period > maxPeriod) {
+                    maxPeriod = payment.period;
+                }
+            }
+            return maxPeriod;
+        }
+
+        // If no payments found, return 0 (will start from period 1)
+        return 0;
     }
 
     /**
@@ -1168,8 +1466,8 @@ class RealEstateContract extends Contract {
     async GetVersionInfo(ctx) {
         const versionInfo = {
             chaincodeName: 'real-estate-cc',
-            version: '2.3.0',
-            description: 'Real Estate Rental Smart Contract with 5-hour payment schedule for testing',
+            version: '2.4.1',
+            description: 'Real Estate Rental Smart Contract with Contract Extension Support (Fixed CouchDB Index)',
             features: [
                 'Contract Management with strict identity validation',
                 'MSP and user identity verification for all operations',
@@ -1181,7 +1479,10 @@ class RealEstateContract extends Contract {
                 'Enhanced penalty system with admin and role-based authorization',
                 'Comprehensive audit trails for all operations',
                 'Strict caller validation for tenant/landlord operations',
-                'Admin role support for penalty operations'
+                'Admin role support for penalty operations',
+                'Contract Extension Support - Record multiple contract renewals',
+                'Automatic payment schedule generation for extensions',
+                'Extension history tracking with immutable audit trail'
             ],
             securityEnhancements: {
                 'Identity Validation': 'All operations now validate both MSP and specific user identity',
@@ -1189,6 +1490,14 @@ class RealEstateContract extends Contract {
                 'Role-based Access': 'Operations restricted to appropriate parties with validation',
                 'Signature Verification': 'Contract signing requires exact identity match',
                 'Admin Support': 'Admin users can perform penalty operations without tenant/landlord validation'
+            },
+            extensionFeatures: {
+                'RecordContractExtension': 'Record approved contract extensions from backend',
+                'CreateExtensionPaymentSchedule': 'Auto-generate payment schedules for extended period',
+                'QueryContractExtensions': 'View complete extension history for a contract',
+                'GetActiveExtension': 'Get current active extension details',
+                'QueryContractsWithExtensions': 'Find all contracts that have been extended',
+                'Extension Tracking': 'Each extension records old/new endDate, old/new rentAmount, timestamps'
             }
         };
 
