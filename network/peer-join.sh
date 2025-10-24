@@ -98,11 +98,11 @@ joinPeer "OrgPropMSP" "localhost:7051" "../organizations/peerOrganizations/orgpr
 
 # OrgTenant peer0 join
 echo "Processing OrgTenant peer..."
-joinPeer "OrgTenantMSP" "peer0.orgtenant.example.com:8051" "../organizations/peerOrganizations/orgtenant.example.com/users/Admin@orgtenant.example.com/msp" "../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls/ca.crt"
+joinPeer "OrgTenantMSP" "localhost:8051" "../organizations/peerOrganizations/orgtenant.example.com/users/Admin@orgtenant.example.com/msp" "../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls/ca.crt"
 
 # OrgLandlord peer0 join
 echo "Processing OrgLandlord peer..."
-joinPeer "OrgLandlordMSP" "peer0.orglandlord.example.com:9051" "../organizations/peerOrganizations/orglandlord.example.com/users/Admin@orglandlord.example.com/msp" "../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls/ca.crt"
+joinPeer "OrgLandlordMSP" "localhost:9051" "../organizations/peerOrganizations/orglandlord.example.com/users/Admin@orglandlord.example.com/msp" "../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls/ca.crt"
 
 # Generate anchor peer update tx for each org (only if not skipping)
 if [ "$SKIP_ANCHOR_PEERS" = false ]; then
@@ -135,13 +135,13 @@ if [ "$SKIP_ANCHOR_PEERS" = false ]; then
       OrgTenantMSP)
         export CORE_PEER_LOCALMSPID=OrgTenantMSP
         export CORE_PEER_MSPCONFIGPATH=../organizations/peerOrganizations/orgtenant.example.com/users/Admin@orgtenant.example.com/msp
-        export CORE_PEER_ADDRESS=peer0.orgtenant.example.com:8051
+        export CORE_PEER_ADDRESS=localhost:8051
         export CORE_PEER_TLS_ROOTCERT_FILE=../organizations/peerOrganizations/orgtenant.example.com/peers/peer0.orgtenant.example.com/tls/ca.crt
         ;;
       OrgLandlordMSP)
         export CORE_PEER_LOCALMSPID=OrgLandlordMSP
         export CORE_PEER_MSPCONFIGPATH=../organizations/peerOrganizations/orglandlord.example.com/users/Admin@orglandlord.example.com/msp
-        export CORE_PEER_ADDRESS=peer0.orglandlord.example.com:9051
+        export CORE_PEER_ADDRESS=localhost:9051
         export CORE_PEER_TLS_ROOTCERT_FILE=../organizations/peerOrganizations/orglandlord.example.com/peers/peer0.orglandlord.example.com/tls/ca.crt
         ;;
     esac

@@ -270,15 +270,15 @@ class RealEstateContract extends Contract {
             throw new Error(`Contract ${contractId} is already terminated`);
         }
 
-        // Validate caller is either landlord or tenant (both parties can terminate)
-        const { isLandlord, isTenant } = this._validateCallerIsParty(ctx, contract);
+        // Validate caller is either landlord, tenant, or admin (all can terminate)
+        const { isLandlord, isTenant, isAdmin, callerUserId } = this._validateCallerIsPartyOrAdmin(ctx, contract);
 
         const clientIdentity = ctx.clientIdentity;
-        const terminatorId = this._extractUserIdFromIdentity(clientIdentity);
+        const terminatorId = callerUserId || this._extractUserIdFromIdentity(clientIdentity);
 
         contract.status = 'TERMINATED';
         contract.terminatedBy = terminatorId;
-        contract.terminatedByRole = isLandlord ? 'landlord' : 'tenant';
+        contract.terminatedByRole = isAdmin ? 'admin' : (isLandlord ? 'landlord' : 'tenant');
         contract.terminatedAt = new Date().toISOString();
         contract.terminationReason = reason || 'Not specified';
         contract.summaryHash = summaryHash || '';
@@ -1466,8 +1466,8 @@ class RealEstateContract extends Contract {
     async GetVersionInfo(ctx) {
         const versionInfo = {
             chaincodeName: 'real-estate-cc',
-            version: '2.4.1',
-            description: 'Real Estate Rental Smart Contract with Contract Extension Support (Fixed CouchDB Index)',
+            version: '2.4.3',
+            description: 'Real Estate Rental Smart Contract - Admin can RecordPenalty and TerminateContract',
             features: [
                 'Contract Management with strict identity validation',
                 'MSP and user identity verification for all operations',
