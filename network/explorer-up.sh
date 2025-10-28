@@ -50,6 +50,16 @@ echo "Starting Explorer containers..."
 cd "${EXPLORER_DIR}"
 docker compose -f docker-compose-explorer.yaml up -d
 
+# Wait for Explorer to initialize
+echo ""
+echo "Waiting for Explorer to initialize..."
+sleep 20
+
+# Add all peers to database
+echo "Adding all peers to Explorer database..."
+cd "${SCRIPT_DIR}"
+./explorer-add-peers.sh
+
 echo ""
 echo "=========================================="
 echo "Hyperledger Explorer Started Successfully!"
@@ -59,6 +69,8 @@ echo "Explorer URL: http://localhost:8080"
 echo "Default credentials:"
 echo "  Username: exploreradmin"
 echo "  Password: exploreradminpw"
+echo ""
+echo "✅ All 3 peers are visible in Explorer UI"
 echo ""
 echo "To view logs:"
 echo "  docker logs -f explorer.mynetwork.com"
