@@ -16,6 +16,7 @@ ledger/
 *.key
 
 # Binary/executables
+bin/
 builders/ccaas/bin/*
 *.exe
 *.out
