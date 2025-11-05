@@ -47,6 +47,21 @@ else
     echo "✓ Peers added successfully"
 fi
 
+# Add peers to peer_ref_channel table
+echo ""
+echo "Adding peers to channel reference table..."
+docker exec explorerdb.mynetwork.com psql -U hppoc -d fabricexplorer -c "
+INSERT INTO peer_ref_channel (peerid, channelid)
+SELECT 'peer0.orgtenant.example.com:8051', '$GENESIS_HASH'
+WHERE NOT EXISTS (SELECT 1 FROM peer_ref_channel WHERE peerid='peer0.orgtenant.example.com:8051');
+
+INSERT INTO peer_ref_channel (peerid, channelid)
+SELECT 'peer0.orglandlord.example.com:9051', '$GENESIS_HASH'
+WHERE NOT EXISTS (SELECT 1 FROM peer_ref_channel WHERE peerid='peer0.orglandlord.example.com:9051');
+" > /dev/null
+
+echo "✓ Channel references added"
+
 # Verify all peers are in database
 echo ""
 echo "Peers in database:"
