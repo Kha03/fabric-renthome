@@ -115,11 +115,15 @@ services:
       - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
+      # Metrics/Operations endpoint
+      - ORDERER_OPERATIONS_LISTENADDRESS=0.0.0.0:8443
+      - ORDERER_METRICS_PROVIDER=prometheus
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     ports:
       - "7050:7050"   # KEEP OPEN: Orderer port for peers & chaincode commits
       - "9443:9443"   # admin port (internal use only - more secure)
+      - "8443:8443"   # metrics/operations port
     volumes:
       - /opt/fabric/fabric-real-estate-network/organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp:/var/hyperledger/orderer/msp
       - /opt/fabric/fabric-real-estate-network/organizations/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls:/var/hyperledger/orderer/tls
@@ -163,6 +167,9 @@ services:
       #- CORE_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
       # Enable the new chaincode launcher (external builder for Node chaincode)
       #- CORE_CHAINCODE_EXTERNALBUILDERS="[{\"name\":\"docker\",\"path\":\"/opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker\"}]"
+      # Metrics/Operations endpoint
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9443
+      - CORE_METRICS_PROVIDER=prometheus
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
     command: peer node start
     volumes:
@@ -173,6 +180,7 @@ services:
       #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml   # use custom core config if needed
     ports:
       - "7051:7051"   # KEEP OPEN: Primary peer for backend communication
+      - "9444:9443"   # metrics/operations port
     depends_on:
       - couchdb.orgprop.example.com
     networks:
@@ -209,6 +217,9 @@ services:
       - CORE_PEER_BCCSP_SW_SECURITY=256
       #- CORE_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
       #- CORE_CHAINCODE_EXTERNALBUILDERS="[{\"name\":\"docker\",\"path\":\"/opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker\"}]"
+      # Metrics/Operations endpoint
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9443
+      - CORE_METRICS_PROVIDER=prometheus
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
@@ -218,6 +229,7 @@ services:
       #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml
     ports:
       - "8051:8051"   # ENABLED: OrgTenant peer for backend communication
+      - "9445:9443"   # metrics/operations port
     depends_on:
       - couchdb.orgtenant.example.com
     networks:
@@ -254,6 +266,9 @@ services:
       - CORE_PEER_BCCSP_SW_SECURITY=256
       #- CORE_BCCSP_SW_FILEKEYSTORE_KEYSTORE=/etc/hyperledger/fabric/msp/keystore
       #- CORE_CHAINCODE_EXTERNALBUILDERS="[{\"name\":\"docker\",\"path\":\"/opt/gopath/src/github.com/hyperledger/fabric/peer/externalbuilders/docker\"}]"
+      # Metrics/Operations endpoint
+      - CORE_OPERATIONS_LISTENADDRESS=0.0.0.0:9443
+      - CORE_METRICS_PROVIDER=prometheus
     command: peer node start
     volumes:
       - /var/run/docker.sock:/host/var/run/docker.sock
@@ -263,6 +278,7 @@ services:
       #- ../config/core.yaml:/etc/hyperledger/fabric/core.yaml
     ports:
       - "9051:9051"   # ENABLED: OrgLandlord peer for backend communication
+      - "9446:9443"   # metrics/operations port
     depends_on:
       - couchdb.orglandlord.example.com
     networks:

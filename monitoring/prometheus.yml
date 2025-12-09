@@ -1,0 +1,93 @@
+# Prometheus configuration for Hyperledger Fabric monitoring
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'fabric-real-estate-monitor'
+
+# Alerting configuration (optional - can add alertmanager later)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#       - targets:
+#         - alertmanager:9093
+
+# Rule files for alerts
+# rule_files:
+#   - "alerts.yml"
+
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Orderer metrics
+  - job_name: 'orderer'
+    static_configs:
+      - targets: ['orderer1.ordererorg.example.com:8443']
+        labels:
+          orderer: 'orderer1'
+          org: 'OrdererOrg'
+    scheme: http  # Using HTTP for simplicity in development
+
+  # OrgProp Peer metrics
+  - job_name: 'peer-orgprop'
+    static_configs:
+      - targets: ['peer0.orgprop.example.com:9443']
+        labels:
+          peer: 'peer0'
+          org: 'OrgProp'
+    scheme: http
+
+  # OrgTenant Peer metrics
+  - job_name: 'peer-orgtenant'
+    static_configs:
+      - targets: ['peer0.orgtenant.example.com:9443']
+        labels:
+          peer: 'peer0'
+          org: 'OrgTenant'
+    scheme: http
+
+  # OrgLandlord Peer metrics
+  - job_name: 'peer-orglandlord'
+    static_configs:
+      - targets: ['peer0.orglandlord.example.com:9443']
+        labels:
+          peer: 'peer0'
+          org: 'OrgLandlord'
+    scheme: http
+
+  # CouchDB metrics (if CouchDB exposes metrics endpoint)
+  - job_name: 'couchdb-orgprop'
+    static_configs:
+      - targets: ['couchdb.orgprop.example.com:5984']
+        labels:
+          database: 'couchdb'
+          org: 'OrgProp'
+    scheme: http
+    basic_auth:
+      username: 'admin'
+      password: 'adminpw'
+
+  - job_name: 'couchdb-orgtenant'
+    static_configs:
+      - targets: ['couchdb.orgtenant.example.com:5984']
+        labels:
+          database: 'couchdb'
+          org: 'OrgTenant'
+    scheme: http
+    basic_auth:
+      username: 'admin'
+      password: 'adminpw'
+
+  - job_name: 'couchdb-orglandlord'
+    static_configs:
+      - targets: ['couchdb.orglandlord.example.com:5984']
+        labels:
+          database: 'couchdb'
+          org: 'OrgLandlord'
+    scheme: http
+    basic_auth:
+      username: 'admin'
+      password: 'adminpw'

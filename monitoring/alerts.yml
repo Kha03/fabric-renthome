@@ -1,0 +1,127 @@
+# Alert rules for Hyperledger Fabric monitoring
+groups:
+  - name: fabric_alerts
+    interval: 30s
+    rules:
+      # Peer down alert
+      - alert: PeerDown
+        expr: up{job=~"peer-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Peer {{ $labels.peer }} in {{ $labels.org }} is down"
+          description: "Peer {{ $labels.peer }} in organization {{ $labels.org }} has been down for more than 2 minutes."
+
+      # Orderer down alert
+      - alert: OrdererDown
+        expr: up{job="orderer"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Orderer {{ $labels.orderer }} is down"
+          description: "Orderer {{ $labels.orderer }} has been down for more than 2 minutes."
+
+      # High CPU usage on peer
+      - alert: PeerHighCPU
+        expr: rate(process_cpu_seconds_total{job=~"peer-.*"}[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage on peer {{ $labels.peer }}"
+          description: "Peer {{ $labels.peer }} in {{ $labels.org }} has CPU usage above 80% for 5 minutes."
+
+      # High memory usage
+      - alert: PeerHighMemory
+        expr: process_resident_memory_bytes{job=~"peer-.*"} > 2e9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage on peer {{ $labels.peer }}"
+          description: "Peer {{ $labels.peer }} is using more than 2GB of memory."
+
+      # Ledger block height not increasing (stale)
+      - alert: LedgerHeightStale
+        expr: rate(ledger_blockchain_height{job=~"peer-.*"}[10m]) == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Ledger height not increasing on {{ $labels.peer }}"
+          description: "Peer {{ $labels.peer }} ledger height has not changed in 15 minutes."
+
+      # Endorsement failures
+      - alert: HighEndorsementFailureRate
+        expr: rate(endorser_proposal_validation_failures{job=~"peer-.*"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High endorsement failure rate on {{ $labels.peer }}"
+          description: "Peer {{ $labels.peer }} has more than 10% endorsement failures."
+
+      # Chaincode instantiation failures
+      - alert: ChaincodeInstantiationFailure
+        expr: increase(chaincode_launch_failures{job=~"peer-.*"}[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Chaincode instantiation failure on {{ $labels.peer }}"
+          description: "Chaincode failed to launch on peer {{ $labels.peer }}."
+
+      # CouchDB down
+      - alert: CouchDBDown
+        expr: up{job=~"couchdb-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CouchDB for {{ $labels.org }} is down"
+          description: "CouchDB instance for {{ $labels.org }} has been down for more than 2 minutes."
+
+      # Disk space warning
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low disk space on host"
+          description: "Available disk space is below 10%."
+
+  - name: node_alerts
+    interval: 30s
+    rules:
+      # Host down
+      - alert: HostDown
+        expr: up{job="node-exporter"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Host monitoring is down"
+          description: "Node exporter has been down for more than 2 minutes."
+
+      # High system CPU
+      - alert: HighSystemCPU
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High system CPU usage"
+          description: "System CPU usage is above 85% for 10 minutes."
+
+      # High system memory
+      - alert: HighSystemMemory
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High system memory usage"
+          description: "System memory usage is above 90% for 10 minutes."
