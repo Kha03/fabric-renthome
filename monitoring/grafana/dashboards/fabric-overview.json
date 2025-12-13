@@ -911,8 +911,8 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "(rate(endorser_proposal_duration_sum{chaincode=\"real-estate-cc\"}[30m]) / rate(endorser_proposal_duration_count{chaincode=\"real-estate-cc\"}[30m])) or on() vector(0)",
-          "legendFormat": "{{org}} {{peer}}",
+          "expr": "histogram_quantile(0.95, sum(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\",success=\"true\"}) by (org, le))",
+          "legendFormat": "{{org}}",
           "refId": "A"
         }
       ],
@@ -1062,7 +1062,7 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "histogram_quantile(0.50, rate(blockcutter_block_fill_duration_bucket{channel=\"rentalchannel\"}[30m])) or on() vector(0)",
+          "expr": "histogram_quantile(0.50, sum(ledger_block_processing_time_bucket{channel=\"rentalchannel\"}) by (le))",
           "refId": "A"
         }
       ],
@@ -1294,11 +1294,13 @@
               },
               {
                 "color": "red",
-                "value": 4
+                "value": 3
               }
             ]
           },
-          "unit": "s"
+          "unit": "s",
+          "max": 5,
+          "min": 0
         },
         "overrides": []
       },
@@ -1328,39 +1330,12 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "histogram_quantile(0.95, sum(ledger_block_processing_time_bucket{channel=\"rentalchannel\"}) by (le))",
-          "legendFormat": "Block Processing p95 (Ordering+Validation+Commit)",
+          "expr": "histogram_quantile(0.95, sum(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\",success=\"true\"}) by (le)) + histogram_quantile(0.95, sum(blockcutter_block_fill_duration_bucket{channel=\"rentalchannel\"}) by (le)) + histogram_quantile(0.95, sum(ledger_block_processing_time_bucket{channel=\"rentalchannel\"}) by (le))",
+          "legendFormat": "End-to-End Latency (Endorsement + Ordering + Commit)",
           "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "histogram_quantile(0.95, sum(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\",success=\"true\"}) by (le))",
-          "legendFormat": "Endorsement p95 (Chaincode Execution)",
-          "refId": "B"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "histogram_quantile(0.50, sum(ledger_block_processing_time_bucket{channel=\"rentalchannel\"}) by (le))",
-          "legendFormat": "Block Processing p50",
-          "refId": "C"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "histogram_quantile(0.50, sum(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\",success=\"true\"}) by (le))",
-          "legendFormat": "Endorsement p50",
-          "refId": "D"
         }
       ],
-      "title": "Transaction Latency (User Perspective)",
+      "title": "End-to-End Transaction Latency (p95)",
       "type": "bargauge"
     },
     {
