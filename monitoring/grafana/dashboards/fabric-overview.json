@@ -1328,12 +1328,39 @@
             "type": "prometheus",
             "uid": "PBFA97CFB590B2093"
           },
-          "expr": "(avg(histogram_quantile(0.95, rate(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\"}[30m])) or on() vector(0)) + avg(histogram_quantile(0.95, rate(blockcutter_block_fill_duration_bucket{channel=\"rentalchannel\"}[30m])) or on() vector(0)) + avg(histogram_quantile(0.95, rate(gossip_privdata_commit_block_duration_bucket{channel=\"rentalchannel\"}[30m])) or on() vector(0)))",
-          "legendFormat": "Total End-to-End Latency (p95)",
+          "expr": "histogram_quantile(0.95, sum(ledger_block_processing_time_bucket{channel=\"rentalchannel\"}) by (le))",
+          "legendFormat": "Block Processing p95 (Ordering+Validation+Commit)",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "histogram_quantile(0.95, sum(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\",success=\"true\"}) by (le))",
+          "legendFormat": "Endorsement p95 (Chaincode Execution)",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "histogram_quantile(0.50, sum(ledger_block_processing_time_bucket{channel=\"rentalchannel\"}) by (le))",
+          "legendFormat": "Block Processing p50",
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "histogram_quantile(0.50, sum(endorser_proposal_duration_bucket{chaincode=\"real-estate-cc\",success=\"true\"}) by (le))",
+          "legendFormat": "Endorsement p50",
+          "refId": "D"
         }
       ],
-      "title": "End-to-End Transaction Latency (p95)",
+      "title": "Transaction Latency (User Perspective)",
       "type": "bargauge"
     },
     {
